@@ -4,8 +4,7 @@ const blockButton = Object.assign(document.createElement("div"), { className: "b
 calculator.classList.add("containerCalculator");
 calculator.append(outputBlock, blockButton);
 
-const buttons = [
-    "C", "←", "%", "÷","7", "8", "9", "*","4", "5", "6", "-","1", "2", "3", "+","±", "0", ".", "=","√", "Х²", "1/X","sin", "cos", "x^y","floor", "ceil", "M+", "M-", "MR", "MC"];
+const buttons = ["C", "←", "%", "÷","7", "8", "9", "*","4", "5", "6", "-","1", "2", "3", "+","±", "0", ".", "=","√", "Х²", "1/X","sin", "cos", "x^y","floor", "ceil", "M+", "M-", "MR", "MC"];
 
 buttons.forEach((label, i) => {
     const btn = Object.assign(document.createElement("button"), { textContent: label, id: `_${i}` });
@@ -19,6 +18,11 @@ let storedValue = null;
 let operator = null;
 let memory = 0;
 
+const roundToPrecision = (num, precision = 10) => {
+    const factor = Math.pow(10, precision);
+    return Math.round(num * factor) / factor;
+};
+
 const handleButtonClick = (value) => {
     if (value === "C") return resetCalculator();
     if (value === "←") return updateOutput(currentValue = currentValue.slice(0, -1) || "0");
@@ -30,12 +34,38 @@ const handleButtonClick = (value) => {
     if (value === "cos") return performUnaryOperation((n) => Math.cos(toRadians(n)));
     if (value === "floor") return performUnaryOperation(Math.floor);
     if (value === "ceil") return performUnaryOperation(Math.ceil);
+    if (value === "M+") return addToMemory(parseFloat(currentValue));
+    if (value === "M-") return subtractFromMemory(parseFloat(currentValue));
+    if (value === "MR") return updateOutput(memory); // Логика для "MR"
+    if (value === "MC") return clearMemory(); // Логика для "MC"
     if (["%", "÷", "*", "-", "+"].includes(value)) return handleOperator(value);
     if (value === "x^y") return handleOperator(value);
     if (value === "=") return evaluateResult();
     if (!isNaN(value) || value === ".") return handleNumber(value);
 };
 
+const addToMemory = (value) => {
+    memory += value;
+    currentValue = memory.toString(); // Обновляем currentValue
+    updateOutput(currentValue); // Показываем результат на экране
+};
+
+const subtractFromMemory = (value) => {
+    memory -= value;
+    currentValue = memory.toString(); // Обновляем currentValue
+    updateOutput(currentValue); // Показываем результат на экране
+};
+
+const clearMemory = () => {
+    memory = 0;
+    highlightMemoryButton(false);
+};
+
+const performUnaryOperation = (operation) => {
+    const result = roundToPrecision(operation(parseFloat(currentValue)));
+    currentValue = result.toString();
+    updateOutput(currentValue);
+};
 
 const handleOperator = (op) => {
     if (storedValue === null) {
@@ -46,17 +76,6 @@ const handleOperator = (op) => {
     operator = op;
     currentValue = "0";
     updateOutput(storedValue);
-};
-
-const calculate = (a, b, op) => {
-    switch (op) {
-        case "+": return a + b;
-        case "-": return a - b;
-        case "*": return a * b;
-        case "÷": return b !== 0 ? a / b : "Ошибка";
-        case "%": return a % b;
-        default: return b;
-    }
 };
 
 const evaluateResult = () => {
@@ -72,9 +91,15 @@ const evaluateResult = () => {
     }
 };
 
-const roundToPrecision = (num, precision = 10) => {
-    const factor = Math.pow(10, precision);
-    return Math.round(num * factor) / factor;
+const calculate = (a, b, op) => {
+    switch (op) {
+        case "+": return a + b;
+        case "-": return a - b;
+        case "*": return a * b;
+        case "÷": return b !== 0 ? a / b : "Error";
+        case "%": return a % b;
+        default: return b;
+    }
 };
 
 const handleNumber = (value) => {
@@ -97,13 +122,15 @@ const updateOutput = (value) => {
     outputBlock.textContent = value.toString();
 };
 
-
-const performUnaryOperation = (operation) => {
-    const result = roundToPrecision(operation(parseFloat(currentValue)));
-    currentValue = result.toString();
-    updateOutput(currentValue);
-};
-
 const toRadians = (angle) => (angle * Math.PI) / 180;
+
+const highlightMemoryButton = (active) => {
+    const memoryButton = document.querySelector("#_28"); // ID кнопки "MR"
+    if (active) {
+        memoryButton.classList.add("active");
+    } else {
+        memoryButton.classList.remove("active");
+    }
+};
 
 document.getElementById("root").appendChild(calculator);
